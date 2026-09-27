@@ -10,6 +10,18 @@ A deictic is a word like *here* or *that*: one whose meaning is fixed by the sit
 
 ![architecture](docs/architecture.svg)
 
+At rest the tool is one circle in the corner, and the page is otherwise untouched:
+
+![the circle in the bottom right corner](docs/screenshot-rest.png)
+
+Hold <kbd>alt</kbd> and click. The element you pointed at becomes a chip in the field, carrying the file and line it came from, and your note rides beside it:
+
+![a chip naming login/+page.svelte:97, the note, the agent picker](docs/screenshot-walk.png)
+
+The same walk at 390×844. The panel keeps the full width of a phone screen rather than the 660px it takes on a desktop:
+
+![the walk at a phone width](docs/screenshot-walk-phone.png)
+
 ## What the agent receives
 
 The agent gets a table of every element you clicked, the file and line each one came from, the element described as the browser built it, and your words.
