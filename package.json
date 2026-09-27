@@ -1,0 +1,36 @@
+{
+  "name": "deictic",
+  "version": "0.1.0",
+  "description": "Alt-click any element in a running Vite app and send a coding agent the source of the line that produced it",
+  "type": "module",
+  "main": "./index.mjs",
+  "exports": {
+    ".": "./index.mjs",
+    "./client": "./client.mjs",
+    "./bridge": "./bridge.mjs"
+  },
+  "files": [
+    "index.mjs",
+    "client.mjs",
+    "toon.mjs",
+    "bridge.mjs",
+    "README.md"
+  ],
+  "scripts": {
+    "test": "bun test"
+  },
+  "keywords": [
+    "vite",
+    "vite-plugin",
+    "feedback",
+    "agent",
+    "devtools"
+  ],
+  "license": "MIT",
+  "peerDependencies": {
+    "vite": "^6 || ^7 || ^8"
+  },
+  "devDependencies": {
+    "jsdom": "^30.1.1"
+  }
+}
