@@ -67,13 +67,7 @@ The package is **not published to a registry.** It is installed from git, which 
 bun add -d github:ciokyyy/deictic
 ```
 
-The repository is currently private, so that needs a token in `~/.npmrc` (`//github.com/:_authToken=…`) or an SSH remote. Over SSH, which avoids the token:
-
-```bash
-bun add -d git+ssh://git@github.com/ciokyyy/deictic.git
-```
-
-Working from a clone reads better and needs no credentials of any kind:
+Working from a clone reads better and needs no credentials at all:
 
 ```bash
 git clone https://github.com/ciokyyy/deictic.git
