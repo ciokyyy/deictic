@@ -53,9 +53,35 @@ The `context` block is the half the file cannot supply. A file says what the cod
 
 ## Install
 
+### What you need
+
+| | |
+| --- | --- |
+| Vite | 6, 7 or 8, as a dev dependency in the app you want to point at |
+| A dev server | the overlay is served by the dev server and nowhere else |
+| [Bun](https://bun.sh) | the bridge and the tests are both Bun, because the bridge uses `Bun.serve`. `node bridge.mjs` does not work. |
+
+The package is **not published to a registry.** It is installed from git, which is also how you get `bridge.mjs`.
+
 ```bash
-npm install --save-dev deictic
+bun add -d github:ciokyyy/deictic
 ```
+
+The repository is currently private, so that needs a token in `~/.npmrc` (`//github.com/:_authToken=…`) or an SSH remote. Over SSH, which avoids the token:
+
+```bash
+bun add -d git+ssh://git@github.com/ciokyyy/deictic.git
+```
+
+Working from a clone reads better and needs no credentials of any kind:
+
+```bash
+git clone https://github.com/ciokyyy/deictic.git
+cd deictic && bun install
+```
+
+
+### 1. Add the plugin
 
 ```js
 // vite.config.js
@@ -67,7 +93,55 @@ export default defineConfig({
 });
 ```
 
+`endpoint` is the only option, and it is required in practice: leave it off and every send is answered `no endpoint configured`. The last path segment is dropped to find the bridge, so `http://127.0.0.1:9977/prompt` yields the base `http://127.0.0.1:9977`, which is where the agent list and the agent starter live. That is why the value ends in a segment rather than being a bare origin.
+
 The plugin serves its own overlay, so nothing is imported into your app and nothing is added to your bundle.
+
+### 2. Start the dev server, and only the dev server
+
+The plugin declares `apply: 'serve'`, so `vite dev` loads it and nothing else does. `vite build` and `vite preview` do not have the overlay, and no reload will change that.
+
+```bash
+npx vite dev
+```
+
+In a monorepo, start the one dev server that serves the app you are reviewing, and give it its own port and its own database if the others share one. Two dev servers pointed at a single SQLite file race on it, and that presents as a server that hangs on boot rather than as a race.
+
+### 3. Start the bridge
+
+Only needed for herdr. Any HTTP server that accepts a `text/plain` POST works as well, and the plugin is written to that contract rather than to herdr.
+
+```bash
+bun node_modules/deictic/bridge.mjs
+```
+
+It binds `127.0.0.1` and nothing else. `BRIDGE_PORT` changes the port from 9977. `BRIDGE_AGENT` pins one pane; leave it unset and a note goes to whichever pane is focused.
+
+### 4. Check it
+
+```bash
+curl http://127.0.0.1:9977/health      # {"ok":true,...}
+curl http://127.0.0.1:9977/agents      # the running agents, the free panes, the 22 kinds
+```
+
+Then open the app, click the circle in the bottom right, hold <kbd>alt</kbd> and click an element. A chip should appear in the field carrying its file and line.
+
+### When it does not work
+
+| what you see | what it means |
+| --- | --- |
+| `this dev server is running an older build of the plugin \u2014 restart it` | a Vite plugin is read when the server starts, so no reload fixes it. Stop the dev server and start it again. |
+| `no endpoint configured` | `endpoint` is missing from `feedbackPlugin()`, or the dev server was started before you added it |
+| `could not reach the endpoint` | the bridge is not running, or the port is wrong. Check `/health`. |
+| no circle in the corner | the overlay did not mount. Check the browser console, and confirm you are on a dev server rather than a preview. |
+
+### Uninstall
+
+```bash
+bun remove deictic
+```
+
+Then delete the `feedbackPlugin` line from `vite.config.js`.
 
 ## The code search is Svelte-only
 
