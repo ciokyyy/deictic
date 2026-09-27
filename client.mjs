@@ -673,7 +673,7 @@ function say(node, text) {
  * the server resolves and quotes — or, when nothing in the subtree is the app's
  * own, `context`: the element itself, described. Never both, never neither.
  *
- * @typedef {{file: string, line: number, url: string, note: string, render?: string} | {context: string, url: string, note: string}} Picked
+ * @typedef {{file?: string, line?: number, url: string, note: string, render?: string, context: string}} Picked
  * @typedef {{request: string, items: Picked[]}} Document
  */
 
@@ -920,15 +920,20 @@ function readDocument() {
 				// to be told which: a file and a line the server can read, plus the
 				// one line of computed truth that says what the browser made of it —
 				// or the element itself, for a place no line in the app accounts for.
-				current = element.dataset.context
-					? { context: String(element.dataset.context), url: String(element.dataset.url), note: '' }
-					: {
-							file: String(element.dataset.file),
-							line: Number(element.dataset.line),
-							url: String(element.dataset.url),
-							note: '',
-							render: element.dataset.render ? String(element.dataset.render) : undefined
-						};
+				// Rebuilt from what the chip carries, which is the location when the
+				// search found one and the element either way.
+				current = {
+					url: String(element.dataset.url),
+					note: '',
+					context: String(element.dataset.context ?? ''),
+					...(element.dataset.file
+						? {
+								file: String(element.dataset.file),
+								line: Number(element.dataset.line),
+								render: element.dataset.render ? String(element.dataset.render) : undefined
+							}
+						: {})
+				};
 				items.push(current);
 				continue;
 			}
@@ -966,25 +971,20 @@ function chipFor(item) {
 	chip.setAttribute('contenteditable', 'false');
 	chip.dataset.url = item.url;
 	chip.dataset.label = chipLabel(item);
-	if ('file' in item && item.file) {
+	// Both halves ride with the chip, because a chip has to survive a reload and
+	// the walk is only as good as what it can rebuild.
+	// `?? ''` rather than a bare assignment: the dataset map stringifies what it
+	// is given, so one missing description would reach the agent as the literal
+	// word "undefined" inside a context block.
+	chip.dataset.context = item.context ?? '';
+	if (item.file && item.line) {
 		chip.dataset.file = item.file;
 		chip.dataset.line = String(item.line);
-		// The rendered truth rides with the chip: a class says `max-w-[85%]` and
-		// the browser says what it did with it, and the second is the half a
-		// review of spacing and colour is actually arguing about.
-		if (item.render) {
-			chip.dataset.render = item.render;
-			chip.title = `${item.file}:${item.line} · ${item.url}\n${item.render}`;
-		} else {
-			chip.title = `${item.file}:${item.line} · ${item.url}`;
-		}
+		chip.title = `${item.file}:${item.line} · ${item.url}\n${item.render ?? item.context}`;
 	} else {
-		// The union is keyed on `context`, not on a falsy `file`: an empty
-		// string would leave both arms reachable and `item.context` untyped.
-		const context = 'context' in item ? item.context : '';
-		chip.dataset.context = context;
-		chip.title = `${context}\n${item.url}`;
+		chip.title = `${item.context}\n${item.url}`;
 	}
+	if (item.render) chip.dataset.render = item.render;
 	Object.assign(chip.style, {
 		display: 'inline-flex',
 		alignItems: 'center',
@@ -1084,20 +1084,15 @@ function loadDocument() {
  */
 function addPick(place, node) {
 	const url = `${location.pathname}${location.search}`;
-	const chip = chipFor(
-		place.file
-			? {
-					file: place.file,
-					line: /** @type {number} */ (place.line),
-					url,
-					note: '',
-					// One line of what the browser made of it, because a class is a
-					// claim and this is the measurement. A place with no code of its
-					// own gets the whole measurement in its description instead.
-					render: factsOf(node).brief
-				}
-			: { context: /** @type {string} */ (place.context), url, note: '' }
-	);
+	const chip = chipFor({
+		url,
+		note: '',
+		// What the browser made of it, always: a class is a claim and this is the
+		// measurement, and a review that says "4px off" is arguing about the
+		// measurement rather than about the class.
+		context: /** @type {string} */ (place.context),
+		...(place.file ? { file: place.file, line: /** @type {number} */ (place.line), render: factsOf(node).brief } : {})
+	});
 	// A space before the chip when the words before it ran up against it: a note
 	// and the next chip must not read as one sentence, which is what makes
 	// `note for 12 · AppSidebar.svelte` out of two separate things.
@@ -1447,7 +1442,11 @@ on(
 		hide(outline);
 		hide(label);
 		open();
-		addPick(appCode ? { file: at.file, line: at.line } : { context: contextOf(event.target, at) }, event.target);
+		// Described either way. The search naming a file says which line of the app
+		// draws this; it says nothing about what the element is, which is the half
+		// the file cannot answer. Dropping the description for a located pick meant
+		// the common case sent the file and lost the element.
+		addPick({ ...(appCode ? { file: at.file, line: at.line } : {}), context: contextOf(event.target, at) }, event.target);
 		// No hint on a pick: the chip that just appeared in the field is the
 		// feedback, and the field is where the person is looking — and when a
 		// dialog owns the keyboard, `open()` has already moved the panel inside it

@@ -796,3 +796,20 @@ test('the top layer is used when the browser has one, and its absence is surviva
 	expect(blob().style.zIndex).toBe('2147483647');
 	if (has) expect(blob().getAttribute('popover')).toBe('manual');
 });
+
+test('a pick that names a file still describes the element', () => {
+	// Stated rather than inherited: a modifier the test above released is a pick
+	// that gets refused, not a pick that fails.
+	arm();
+	modified('click', link());
+	// Last in the file, because the walk is shared state: a pick here is a chip
+	// every test above would have to account for.
+	const chip = chips()[chips().length - 1];
+	expect(chip.dataset.file).toBe('src/lib/AppSidebar.svelte');
+	// The element description used to be a fallback for the places no line of the
+	// app accounts for, so a pick that resolved to a file sent the file and threw
+	// the element away. The file says what the code is; only the element says
+	// what the browser made of it.
+	expect(chip.dataset.context, 'the element is not in the walk at all').toBeTruthy();
+	expect(chip.dataset.context).toContain('path:');
+});
