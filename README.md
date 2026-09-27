@@ -129,6 +129,17 @@ Then open the app, click the circle in the bottom right, hold <kbd>alt</kbd> and
 | `could not reach the endpoint` | the bridge is not running, or the port is wrong. Check `/health`. |
 | no circle in the corner | the overlay did not mount. Check the browser console, and confirm you are on a dev server rather than a preview. |
 
+### As a Herdr plugin
+
+`herdr-plugin.toml` is at the repository root, so the plugin is installable and the marketplace lists it:
+
+```bash
+herdr plugin install ciokyyy/deictic
+herdr plugin action invoke ciokyyy.deictic.start-bridge
+```
+
+The action starts the bridge and prints the `endpoint` to paste into `vite.config.js`. It is an action rather than a startup hook because the bridge is a server and a startup hook is documented as one-shot initialisation that exits. The script puts the bridge in a new session with `setsid`, because Herdr tears down an action's process group when the action returns and `nohup` alone does not survive that.
+
 ### Uninstall
 
 ```bash

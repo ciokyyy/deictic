@@ -1,0 +1,17 @@
+id = "ciokyyy.deictic"
+name = "Deictic"
+version = "0.1.0"
+# The manifest uses only fields that 0.8.0 already parsed. A higher floor would
+# make the local binary refuse to link it, and nothing here needs a newer API.
+min_herdr_version = "0.8.0"
+description = "Start the bridge that hands UI feedback notes from a running Vite app to an agent pane"
+platforms = ["linux", "macos"]
+
+# Not a startup hook on purpose. Startup hooks are documented as one-shot
+# initialisation that exits, and this is a server that stays up, so it is an
+# action a person runs once per machine instead.
+[[actions]]
+id = "start-bridge"
+title = "Start the feedback bridge"
+contexts = ["workspace"]
+command = ["bash", "start-bridge.sh"]
